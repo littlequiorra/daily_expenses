@@ -86,37 +86,49 @@ class _ExpenseListState extends State<ExpenseList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Daily Expenses'),
-      ),
+      // appBar: AppBar(
+      //   title: Text('Daily Expenses'),
+      // ),
       body: Column(
         children: [
-          // Add your UI components here
-
-          // Example: Text widget to display total amount
-          Text('Total Amount: RM ${_calculateTotal()}'),
-
-          // Add the ListView
-          _buildListView(),
-
-          // Add your input fields and buttons here
-          // Example: TextField and ElevatedButton for adding expenses
-          TextField(
-            controller: descriptionController,
-            decoration: InputDecoration(labelText: 'Description'),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: descriptionController,
+              decoration: InputDecoration(
+                labelText: 'Description',
+              ),
+            ),
           ),
-          TextField(
-            controller: amountController,
-            decoration: InputDecoration(labelText: 'Amount(RM)'),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: amountController,
+              decoration: InputDecoration(
+                labelText: 'Amount(RM)',
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: 'Total Amount: RM ${_calculateTotal()}',
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: _addExpense,
             child: Text('Add Expense'),
           ),
+          Container(
+            child: _buildListView(),
+          ),
         ],
       ),
     );
   }
+
 
   Widget _buildListView() {
     return Expanded(
