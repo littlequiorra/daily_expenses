@@ -1,3 +1,4 @@
+import 'package:daily_expenses/Controller/request_controller.dart';
 import 'package:daily_expenses/dailyexpenses.dart';
 import 'package:flutter/material.dart';
 
@@ -9,7 +10,13 @@ class Expense {
   final String description;
   final String amount;
 
-  Expense(this.description, this.amount);
+  Expense(this.description, this.amount, dateTime);
+
+  get dateTime => null;
+
+  save() {}
+
+  static loadAll() {}
 }
 
 class DailyExpensesApp extends StatelessWidget {
@@ -27,6 +34,8 @@ class DailyExpensesApp extends StatelessWidget {
 }
 
 class ExpenseList extends StatefulWidget {
+  get username => null;
+
   @override
   _ExpenseListState createState() => _ExpenseListState();
 }
@@ -35,18 +44,26 @@ class _ExpenseListState extends State<ExpenseList> {
   final List<Expense> expenses = [];
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
+  final TextEditingController totalAmountController = TextEditingController();
+  final TextEditingController txtDateController = TextEditingController();
 
   double totalAmount = 0.0;
 
-  void _addExpense() {
+  void _addExpense() async {
     String description = descriptionController.text.trim();
     String amount = amountController.text.trim();
     if (description.isNotEmpty && amount.isNotEmpty) {
-      setState(() {
-        expenses.add(Expense(description, amount));
-        descriptionController.clear();
-        amountController.clear();
-      });
+      Expense exp =
+      Expense(double.parse(amount) as String, description, txtDateController.text);
+      if (await exp.save()) {
+        setState(() {
+          expenses.add(exp);
+          descriptionController.clear();
+          amountController.clear();
+        });
+      } else {
+        _showMessage("Failed to save Expenses data");
+      }
     }
   }
 
@@ -54,6 +71,17 @@ class _ExpenseListState extends State<ExpenseList> {
     setState(() {
       expenses.removeAt(index);
     });
+  }
+
+  void _showMessage (String msg) {
+    if (mounted) {
+      //make sure this context is still mounted/exist
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+        ),
+      );
+    }
   }
 
   void _editExpense(int index) {
@@ -64,16 +92,63 @@ class _ExpenseListState extends State<ExpenseList> {
           expense: expenses[index],
           onSave: (editedExpense) {
             setState(() {
-              totalAmount +=
-                  double.parse(editedExpense.amount) -
-                      double.parse(expenses[index].amount);
+              totalAmount += double.parse(editedExpense.amount) - double.parse(expenses[index].amount);
               expenses[index] = editedExpense;
+                  totalAmountController.text = totalAmount.toString();
             });
           },
         ),
       ),
     );
   }
+
+  //new fn- Date and time picker on textField
+  _selectDate() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context : context,
+      initialDate : DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (pickedDate !=null && pickedTime != null) {
+      setState((){
+        txtDateController.text =
+        "${pickedDate.year}-${pickedDate.month}-${pickedDate.day}"
+            "${pickedTime.hour}:${pickedTime.minute}:00";
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      _showMessage ("Welcome ${widget.username}");
+
+      RequestController req = RequestController(
+        path: "/api/timezone/Asia/Kuala_Lumpur",
+        server:"http://worldtimeapi.org");
+
+      req.get().then((value) {
+        dynamic res = req.result();
+        txtDateController.text =
+            res["datetime"].toString().substring(0,19).replaceAll('T','');
+
+      });
+      expenses.addAll(await Expense.loadAll());
+
+      setState(() {
+        _calculateTotal();
+      });
+    });
+  }
+
 
   String _calculateTotal() {
     double total = 0;
@@ -112,11 +187,21 @@ class _ExpenseListState extends State<ExpenseList> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              decoration: InputDecoration(
-                labelText: 'Total Amount: RM ${_calculateTotal()}',
-              ),
+                keyboardType: TextInputType.datetime,
+                controller:txtDateController,
+                readOnly: true,
+                onTap: _selectDate,
+                decoration: const InputDecoration(labelText: 'Date'),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: totalAmountController,
+              readOnly: true,
+              decoration: InputDecoration(labelText: 'Total Amount (RM):'),
+              ),
+            ),
           ElevatedButton(
             onPressed: _addExpense,
             child: Text('Add Expense'),
@@ -155,7 +240,12 @@ class _ExpenseListState extends State<ExpenseList> {
               margin: EdgeInsets.all(8.0),
               child: ListTile(
                 title: Text(expenses[index].description),
-                subtitle: Text('Amount: RM ${expenses[index].amount}'),
+                subtitle: Row(children: [
+
+                    Text('Amount: RM ${expenses[index].amount}'),
+                    const Spacer(),
+                    Text('Date: ${expenses[index].dateTime}'),
+                ]) ,
                 trailing: IconButton(
                   icon: Icon(Icons.delete),
                   onPressed: () => _removeExpense(index),
@@ -217,7 +307,8 @@ class EditExpenseScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               //Save the edited expense details
-              onSave(Expense (amountController.text, descController.text));
+              onSave(Expense (double.parse(amountController.text) as String,
+                  descController.text, expense.dateTime)); //Expense
 
               //Navigate back to the ExpenseList Screen
               Navigator.pop(context);
