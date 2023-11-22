@@ -2,20 +2,20 @@ import 'package:daily_expenses/Controller/request_controller.dart';
 import 'package:daily_expenses/Model/expense.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(DailyExpensesApp());
-}
+void main() => runApp(DailyExpensesApp(username: ""));  // Pass empty string on
+// constructor
 
 class DailyExpensesApp extends StatelessWidget {
+
+  final String username;  // Add attribute username
+
+  DailyExpensesApp({required String this.username}); // Define constructor with
+  // as parameter
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Daily Expenses'),
-        ),
-        body: ExpenseList(),
-      ),
+      home: ExpenseList(),
     );
   }
 }
@@ -24,45 +24,115 @@ class ExpenseList extends StatefulWidget {
   get username => null;
 
   @override
-  _ExpenseListState createState() => _ExpenseListState();
+  State<ExpenseList> createState() => _ExpenseListState();
 }
 
+class EditExpenseScreen extends StatelessWidget {
+  final Expense expense;
+  final Function(Expense) onSave;
+
+  EditExpenseScreen({required this.expense, required this.onSave});
+
+  final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController amountController = TextEditingController();
+
+  // Widget build method and user interface (UI) goes here
+  @override
+  Widget build(BuildContext context){
+    // Initialize the controllers with the current expense details
+    descriptionController.text = expense.desc;
+    amountController.text = expense.amount.toString();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Edit Expense'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: descriptionController,
+              decoration: InputDecoration(
+                labelText: 'Description',
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: amountController,
+              decoration: InputDecoration(
+                labelText: 'Amount (RM)',
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: (){
+              // Save the edited expense details
+              onSave(Expense(double.parse(amountController.text),
+                  descriptionController.text,expense.dateTime));
+              // Navigate back to the ExpenseList screen
+              Navigator.pop(context);
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
 class _ExpenseListState extends State<ExpenseList> {
+
   final List<Expense> expenses = [];
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
   final TextEditingController totalAmountController = TextEditingController();
   final TextEditingController txtDateController = TextEditingController();
+  double totalAmount = 0.00;
+  //added new parameter for Expense Constructor - DateTime text
 
-  double totalAmount = 0.0;
-
-  void _addExpense() async {
+  void _addExpense() async{
     String description = descriptionController.text.trim();
     String amount = amountController.text.trim();
     if (description.isNotEmpty && amount.isNotEmpty) {
-      Expense exp =
-      Expense(double.parse(amount), description, txtDateController.text);
-      if (await exp.save()) {
+      Expense exp = Expense(double.parse(amount), description,
+          txtDateController.text);
+      if(await exp.save()){
         setState(() {
           expenses.add(exp);
           descriptionController.clear();
           amountController.clear();
+          calculateTotal();
         });
-      } else {
+      } else{
         _showMessage("Failed to save Expenses data");
       }
     }
   }
 
+  void calculateTotal(){
+    totalAmount = 0.00;
+    for(Expense ex in expenses){
+      totalAmount += ex.amount;
+    }
+    totalAmountController.text = totalAmount.toString();
+  }
+
   void _removeExpense(int index) {
+    totalAmount -= expenses[index].amount;
     setState(() {
       expenses.removeAt(index);
+      totalAmountController.text = totalAmount.toString();
     });
   }
 
-  void _showMessage (String msg) {
-    if (mounted) {
-      //make sure this context is still mounted/exist
+  //function to display message at bottom of scaffold
+  void _showMessage(String msg){
+    if(mounted){
+      //make sure this content is still mounted/exist
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
@@ -71,17 +141,19 @@ class _ExpenseListState extends State<ExpenseList> {
     }
   }
 
-  void _editExpense(int index) {
+  // Navigate to Edit Screen when long press on the itemlist
+  //edited
+  void _editExpense(int index){
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => EditExpenseScreen(
           expense: expenses[index],
-          onSave: (editedExpense) {
+          onSave: (editedExpense){
             setState(() {
               totalAmount += editedExpense.amount - expenses[index].amount;
               expenses[index] = editedExpense;
-                  totalAmountController.text = totalAmount.toString();
+              totalAmountController.text = totalAmount.toString();
             });
           },
         ),
@@ -89,6 +161,7 @@ class _ExpenseListState extends State<ExpenseList> {
     );
   }
 
+  //new function - Date and time picker on textfield
   //new fn- Date and time picker on textField
   _selectDate() async {
     final DateTime? pickedDate = await showDatePicker(
@@ -112,6 +185,7 @@ class _ExpenseListState extends State<ExpenseList> {
     }
   }
 
+  //new
   @override
   void initState() {
     super.initState();
@@ -119,8 +193,8 @@ class _ExpenseListState extends State<ExpenseList> {
       _showMessage ("Welcome ${widget.username}");
 
       RequestController req = RequestController(
-        path: "/api/timezone/Asia/Kuala_Lumpur",
-        server:"http://worldtimeapi.org");
+          path: "/api/timezone/Asia/Kuala_Lumpur",
+          server:"http://worldtimeapi.org");
 
       req.get().then((value) {
         dynamic res = req.result();
@@ -131,26 +205,25 @@ class _ExpenseListState extends State<ExpenseList> {
       expenses.addAll(await Expense.loadAll());
 
       setState(() {
-        _calculateTotal();
+        calculateTotal();
       });
     });
   }
-
-
-  String _calculateTotal() {
+  String _calculateTotalExpenses() {
     double total = 0.0;
     for (var expense in expenses) {
       total += expense.amount;
     }
+
     return total.toStringAsFixed(2);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text('Daily Expenses'),
-      // ),
+      appBar: AppBar(
+        title: Text('Daily Expenses'),
+      ),
       body: Column(
         children: [
           Padding(
@@ -167,18 +240,19 @@ class _ExpenseListState extends State<ExpenseList> {
             child: TextField(
               controller: amountController,
               decoration: InputDecoration(
-                labelText: 'Amount(RM)',
+                labelText: 'Amount (RM)',
               ),
             ),
           ),
           Padding(
+            //new textfield for the date and time
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-                keyboardType: TextInputType.datetime,
-                controller:txtDateController,
-                readOnly: true,
-                onTap: _selectDate,
-                decoration: const InputDecoration(labelText: 'Date'),
+              keyboardType: TextInputType.datetime,
+              controller: txtDateController,
+              readOnly: true,
+              onTap: _selectDate,
+              decoration: const InputDecoration(labelText: 'Date'),
             ),
           ),
           Padding(
@@ -186,29 +260,32 @@ class _ExpenseListState extends State<ExpenseList> {
             child: TextField(
               controller: totalAmountController,
               readOnly: true,
-              decoration: InputDecoration(labelText: 'Total Amount (RM):${_calculateTotal()}'),
+              decoration: InputDecoration(
+                  labelText: 'Total Spend (RM): ${_calculateTotalExpenses()}'
               ),
             ),
+          ),
           ElevatedButton(
             onPressed: _addExpense,
             child: Text('Add Expense'),
           ),
           Container(
             child: _buildListView(),
-          ),
+          )
         ],
       ),
     );
   }
-
 
   Widget _buildListView() {
     return Expanded(
       child: ListView.builder(
         itemCount: expenses.length,
         itemBuilder: (context, index) {
+          // Unique key for each item
           return Dismissible(
-            key: Key(expenses[index].amount.toString()),
+            key: Key(expenses[index].amount.toString()), // Unique key for each
+            // item
             background: Container(
               color: Colors.red,
               child: Center(
@@ -219,20 +296,22 @@ class _ExpenseListState extends State<ExpenseList> {
               ),
             ),
             onDismissed: (direction) {
+              // Handle item removal here
               _removeExpense(index);
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text('Item dismissed')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Item dismissed')));
             },
             child: Card(
               margin: EdgeInsets.all(8.0),
               child: ListTile(
                 title: Text(expenses[index].desc),
-                subtitle: Row(children: [
-
-                  Text('Amount: RM ${expenses[index].amount.toString()}'),
-                    const Spacer(),
-                    Text('Date: ${expenses[index].dateTime}'),
-                ]) ,
+                subtitle: Row(
+                    children: [
+                      //edited
+                      Text('Amount: ${expenses[index].amount}'),
+                      const Spacer(),
+                      Text('Date: ${expenses[index].dateTime}')
+                    ]),
                 trailing: IconButton(
                   icon: Icon(Icons.delete),
                   onPressed: () => _removeExpense(index),
@@ -248,74 +327,3 @@ class _ExpenseListState extends State<ExpenseList> {
     );
   }
 }
-
-class EditExpenseScreen extends StatelessWidget {
-  final Expense expense;
-  final Function(Expense) onSave;
-
-  EditExpenseScreen({required this.expense, required this.onSave});
-
-  final TextEditingController descController = TextEditingController();
-  final TextEditingController amountController = TextEditingController();
-
-  // Widget build method and user interface (UI) goes here
-
-  @override
-  Widget build(BuildContext context) {
-    //Initialize the controllers with the current expense details
-    descController.text = expense.desc;
-    amountController.text= expense.amount.toString();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Daily Expenses'),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: descController,
-              decoration: InputDecoration(
-                labelText: 'Description',
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount(RM)',
-              ),
-            ),
-          ),
-
-          ElevatedButton(
-            onPressed: () {
-              //Save the edited expense details
-              onSave(Expense (double.parse(amountController.text),
-                  descController.text, expense.dateTime)); //Expense
-
-              //Navigate back to the ExpenseList Screen
-              Navigator.pop(context);
-            },
-
-            child: Text('Save'),
-          ),
-
-        ],
-      ),
-    );
-  }
-}
-
-
-
-
-
-
-
-
-
-
