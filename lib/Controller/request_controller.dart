@@ -11,7 +11,7 @@ class RequestController {
   dynamic _resultData;
 
   RequestController ({required this.path, this.server =
-  "http://192.168.81.1" /*10.0.0.2 for emulated device*/});
+  "http://192.168.0.118" /*10.0.0.2 for emulated device*/});
   setBody (Map<String, dynamic> data) {
     _body.clear();
     _body.addAll(data);

@@ -8,7 +8,7 @@ class Expense {
 
   Expense.fromJson(Map<String, dynamic> json)
       : desc = json['desc'] as String,
-        amount = double.parse (json['amount'] as dynamic),
+        amount = json['amount'] as dynamic  ,
         dateTime = json['dateTime'] as String;
 
   //toJson will be automatically called by jsonEncode when necessary

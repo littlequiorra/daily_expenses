@@ -1,22 +1,9 @@
 import 'package:daily_expenses/Controller/request_controller.dart';
-import 'package:daily_expenses/dailyexpenses.dart';
+import 'package:daily_expenses/Model/expense.dart';
 import 'package:flutter/material.dart';
 
 void main() {
   runApp(DailyExpensesApp());
-}
-
-class Expense {
-  final String description;
-  final String amount;
-
-  Expense(this.description, this.amount, dateTime);
-
-  get dateTime => null;
-
-  save() {}
-
-  static loadAll() {}
 }
 
 class DailyExpensesApp extends StatelessWidget {
@@ -54,7 +41,7 @@ class _ExpenseListState extends State<ExpenseList> {
     String amount = amountController.text.trim();
     if (description.isNotEmpty && amount.isNotEmpty) {
       Expense exp =
-      Expense(double.parse(amount) as String, description, txtDateController.text);
+      Expense(double.parse(amount), description, txtDateController.text);
       if (await exp.save()) {
         setState(() {
           expenses.add(exp);
@@ -92,7 +79,7 @@ class _ExpenseListState extends State<ExpenseList> {
           expense: expenses[index],
           onSave: (editedExpense) {
             setState(() {
-              totalAmount += double.parse(editedExpense.amount) - double.parse(expenses[index].amount);
+              totalAmount += double.parse(editedExpense.amount as String) - double.parse(expenses[index].amount as String);
               expenses[index] = editedExpense;
                   totalAmountController.text = totalAmount.toString();
             });
@@ -153,7 +140,7 @@ class _ExpenseListState extends State<ExpenseList> {
   String _calculateTotal() {
     double total = 0;
     for (var expense in expenses) {
-      total += double.parse(expense.amount);
+      total += double.parse(expense.amount as String);
     }
     return total.toStringAsFixed(2);
   }
@@ -221,7 +208,7 @@ class _ExpenseListState extends State<ExpenseList> {
         itemCount: expenses.length,
         itemBuilder: (context, index) {
           return Dismissible(
-            key: Key(expenses[index].description),
+            key: Key(expenses[index].desc),
             background: Container(
               color: Colors.red,
               child: Center(
@@ -239,10 +226,10 @@ class _ExpenseListState extends State<ExpenseList> {
             child: Card(
               margin: EdgeInsets.all(8.0),
               child: ListTile(
-                title: Text(expenses[index].description),
+                title: Text(expenses[index].desc),
                 subtitle: Row(children: [
 
-                    Text('Amount: RM ${expenses[index].amount}'),
+                  Text('Amount: RM ${expenses[index].amount.toString()}'),
                     const Spacer(),
                     Text('Date: ${expenses[index].dateTime}'),
                 ]) ,
@@ -276,8 +263,8 @@ class EditExpenseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     //Initialize the controllers with the current expense details
-    descController.text = expense.description;
-    amountController.text= expense.amount;
+    descController.text = expense.desc;
+    amountController.text= expense.amount as String;
 
     return Scaffold(
       appBar: AppBar(
@@ -307,7 +294,7 @@ class EditExpenseScreen extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               //Save the edited expense details
-              onSave(Expense (double.parse(amountController.text) as String,
+              onSave(Expense (double.parse(amountController.text),
                   descController.text, expense.dateTime)); //Expense
 
               //Navigate back to the ExpenseList Screen
