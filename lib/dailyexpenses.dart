@@ -79,7 +79,7 @@ class _ExpenseListState extends State<ExpenseList> {
           expense: expenses[index],
           onSave: (editedExpense) {
             setState(() {
-              totalAmount += double.parse(editedExpense.amount as String) - double.parse(expenses[index].amount as String);
+              totalAmount += editedExpense.amount - expenses[index].amount;
               expenses[index] = editedExpense;
                   totalAmountController.text = totalAmount.toString();
             });
@@ -138,9 +138,9 @@ class _ExpenseListState extends State<ExpenseList> {
 
 
   String _calculateTotal() {
-    double total = 0;
+    double total = 0.0;
     for (var expense in expenses) {
-      total += double.parse(expense.amount as String);
+      total += expense.amount;
     }
     return total.toStringAsFixed(2);
   }
@@ -186,7 +186,7 @@ class _ExpenseListState extends State<ExpenseList> {
             child: TextField(
               controller: totalAmountController,
               readOnly: true,
-              decoration: InputDecoration(labelText: 'Total Amount (RM):'),
+              decoration: InputDecoration(labelText: 'Total Amount (RM):${_calculateTotal()}'),
               ),
             ),
           ElevatedButton(
@@ -208,7 +208,7 @@ class _ExpenseListState extends State<ExpenseList> {
         itemCount: expenses.length,
         itemBuilder: (context, index) {
           return Dismissible(
-            key: Key(expenses[index].desc),
+            key: Key(expenses[index].amount.toString()),
             background: Container(
               color: Colors.red,
               child: Center(
@@ -264,7 +264,7 @@ class EditExpenseScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     //Initialize the controllers with the current expense details
     descController.text = expense.desc;
-    amountController.text= expense.amount as String;
+    amountController.text= expense.amount.toString();
 
     return Scaffold(
       appBar: AppBar(
