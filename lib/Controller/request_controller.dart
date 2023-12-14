@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RequestController {
   String path;
@@ -10,8 +11,8 @@ class RequestController {
   final Map <String, String> _headers ={};
   dynamic _resultData;
 
-  RequestController ({required this.path, this.server =
-  "http://192.168.0.118" /*10.0.0.2 for emulated device*/});
+
+  RequestController ({required this.path, required this.server});
   setBody (Map<String, dynamic> data) {
     _body.clear();
     _body.addAll(data);
@@ -19,21 +20,30 @@ class RequestController {
 
   }
 
+
   Future<void> post() async {
+    final SharedPreferences pref = await SharedPreferences.getInstance();
+    String api = pref.getString("retrieveTheURLFROMSharedPrefs") ?? "";
     _res = await http.post(
-      Uri.parse(server+path),
+      Uri.parse("http://$api$path"),
       headers: _headers,
       body: jsonEncode(_body),
     );
     _parseResult();
+    print("url>>");
+    print (server+path);
   }
 
   Future<void> get() async {
+    final SharedPreferences pref = await SharedPreferences.getInstance();
+    String api = pref.getString("retrieveTheURLFROMSharedPrefs") ?? "";
     _res= await http.get(
-      Uri.parse(server +path),
+      Uri.parse("http://$api$path"),
       headers: _headers,
     );
     _parseResult();
+    print("url>>");
+    print (server+path);
   }
 
   void _parseResult(){

@@ -2,14 +2,15 @@ import 'package:daily_expenses/Controller/request_controller.dart';
 import 'package:daily_expenses/Model/expense.dart';
 import 'package:flutter/material.dart';
 
-void main() => runApp(DailyExpensesApp(username: ""));  // Pass empty string on
+
+//void main() => runApp(DailyExpensesApp(username: "", api: '',));  // Pass empty string on
 // constructor
 
 class DailyExpensesApp extends StatelessWidget {
 
   final String username;  // Add attribute username
 
-  DailyExpensesApp({required String this.username}); // Define constructor with
+  DailyExpensesApp({required String this.username,}); // Define constructor with
   // as parameter
 
   @override
@@ -21,7 +22,7 @@ class DailyExpensesApp extends StatelessWidget {
 }
 
 class ExpenseList extends StatefulWidget {
-  get username => null;
+  get username => username;
 
   @override
   State<ExpenseList> createState() => _ExpenseListState();
@@ -38,7 +39,7 @@ class EditExpenseScreen extends StatelessWidget {
 
   // Widget build method and user interface (UI) goes here
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     // Initialize the controllers with the current expense details
     descriptionController.text = expense.desc;
     amountController.text = expense.amount.toString();
@@ -47,41 +48,50 @@ class EditExpenseScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Edit Expense'),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: descriptionController,
-              decoration: InputDecoration(
-                labelText: 'Description',
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount (RM)',
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: amountController,
+                decoration: InputDecoration(
+                  labelText: 'Amount (RM)',
+                ),
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: (){
-              // Save the edited expense details
-              onSave(Expense(double.parse(amountController.text),
-                  descriptionController.text,expense.dateTime));
-              // Navigate back to the ExpenseList screen
-              Navigator.pop(context);
-            },
-            child: Text('Save'),
-          ),
-        ],
+          ],
+        ),
+      ),
+      // Use Expanded to make the button take up remaining vertical space
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: () {
+            // Save the edited expense details
+            onSave(Expense(double.parse(amountController.text),
+                descriptionController.text, expense.dateTime));
+            // Navigate back to the ExpenseList screen
+            Navigator.pop(context);
+          },
+          child: Text('Save'),
+        ),
       ),
     );
   }
+
+
 }
+
 
 
 class _ExpenseListState extends State<ExpenseList> {

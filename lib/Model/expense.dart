@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../Controller/sqlite_db.dart';
 import '../Controller/request_controller.dart';
 
@@ -25,7 +27,9 @@ class Expense {
     //Save to local SQlite
     await SQLiteDB().insert(SQLiteTable, toJson());
     //API Operation
-    RequestController req = RequestController(path: "/api/expenses.php");
+    final SharedPreferences pref = await SharedPreferences.getInstance();
+    String api = pref.getString("retrieveTheURLFROMSharedPrefs") ?? "";
+    RequestController req = RequestController(path: "/api/expenses.php", server: api);
     req.setBody(toJson());
     await req.post();
     if (req.status()==200) {
@@ -44,7 +48,13 @@ class Expense {
 
   static Future<List<Expense>> loadAll() async {
     List<Expense> result =[];
-    RequestController req = RequestController(path: "/api/expenses.php");
+    final SharedPreferences pref = await SharedPreferences.getInstance();
+    String api = pref.getString("retrieveTheURLFROMSharedPrefs") ?? "";
+     RequestController req = RequestController(
+      path: "/api/expenses.php",
+       server: "http://$api",
+    );
+
     await req.get();
     if (req.status() == 200 && req.result() != null) {
       for (var item in req.result()) {
